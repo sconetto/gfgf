@@ -10,7 +10,8 @@ from pydantic import BaseModel, ConfigDict
 
 from app import db
 from app.config import get_settings
-from app.models import Base
+from app.routers import habits, health_ingest, laps, weights
+from app.schema_sync import ensure_schema
 
 
 class HealthResponse(BaseModel):
@@ -35,8 +36,7 @@ async def get_db_status() -> Literal["ok"]:
 async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     """Create the engine, idempotently ensure the schema exists, clean up."""
     engine = db.init_engine(get_settings())
-    async with engine.begin() as connection:
-        await connection.run_sync(Base.metadata.create_all)
+    await ensure_schema(engine)
     yield
     await db.dispose_engine()
 
@@ -60,6 +60,11 @@ def create_app() -> FastAPI:
         db_status: Annotated[Literal["ok"], Depends(get_db_status)],
     ) -> HealthResponse:
         return HealthResponse(status="ok", db=db_status)
+
+    application.include_router(weights.router)
+    application.include_router(laps.router)
+    application.include_router(health_ingest.router)
+    application.include_router(habits.router)
 
     return application
 

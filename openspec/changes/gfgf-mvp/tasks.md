@@ -13,26 +13,26 @@
 
 ## 3. Weight tracking API
 
-- [ ] 3.1 Implement create/upsert weight entry (one per date) with weight > 0 validation
-- [ ] 3.2 Implement list weight history ordered by date
-- [ ] 3.3 Implement delete weight entry by id
+- [x] 3.1 Implement create/upsert weight entry (one per date) with weight > 0 validation
+- [x] 3.2 Implement list weight history ordered by date
+- [x] 3.3 Implement delete weight entry by id
 
 ## 4. Lap tracking API
 
-- [ ] 4.1 Implement lap-time parser (`m:ss.ms` / `ss.ms` → integer milliseconds) with validation
-- [ ] 4.2 Implement create/list lap entries (per track)
-- [ ] 4.3 Implement derived session-best (per track+day) and lifetime-PB (per track) endpoints
+- [x] 4.1 Implement lap-time parser (`m:ss.ms` / `ss.ms` → integer milliseconds) with validation
+- [x] 4.2 Implement create/list lap entries (per track)
+- [x] 4.3 Implement derived session-best (per track+day) and lifetime-PB (per track) endpoints
 
 ## 5. Health ingest API
 
-- [ ] 5.1 Implement tolerant `POST /api/ingest/health` accepting generic JSON metric records
-- [ ] 5.2 Store metrics generically (type, value, unit, measured_at)
-- [ ] 5.3 Implement retrieve metrics by type ordered by time
+- [x] 5.1 Implement tolerant `POST /api/ingest/health` accepting generic JSON metric records
+- [x] 5.2 Store metrics generically (type, value, unit, measured_at)
+- [x] 5.3 Implement retrieve metrics by type ordered by time
 
 ## 6. Habit tracking API
 
-- [ ] 6.1 Implement daily-log upsert with `exercised` flag and extensible flags
-- [ ] 6.2 Implement retrieve daily logs for a date range
+- [x] 6.1 Implement daily-log upsert with `exercised` flag and extensible flags
+- [x] 6.2 Implement retrieve daily logs for a date range
 
 ## 7. Frontend (Next.js / TypeScript)
 

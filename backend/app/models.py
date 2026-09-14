@@ -3,7 +3,8 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, Text, func
+from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, Text, func, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -70,5 +71,8 @@ class DailyLog(CreatedAtMixin, Base):
     log_date: Mapped[date] = mapped_column(Date, unique=True, nullable=False)
     exercised: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
+    )
+    flags: Mapped[dict[str, bool]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
     )
     note: Mapped[str | None] = mapped_column(Text, nullable=True)

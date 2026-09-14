@@ -56,7 +56,7 @@ function SignalCard({
   readonly meta: MetricSignalMeta;
   readonly metrics: readonly MetricRead[];
 }): ReactElement {
-  const [range, setRange] = useState<ChartRange>("Y");
+  const [range, setRange] = useState<ChartRange>("M");
   const accent = metricAccent(meta.type);
   const visible = filterByRange(
     metrics.map((metric) => ({ t: Date.parse(metric.measured_at), metric })),

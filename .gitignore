@@ -1,5 +1,6 @@
 # Runtime / local state
 .omo/
+.opencode/
 .DS_Store
 
 # Node

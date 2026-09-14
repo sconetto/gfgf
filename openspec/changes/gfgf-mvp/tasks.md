@@ -1,0 +1,62 @@
+## 1. Project scaffolding & compose
+
+- [ ] 1.1 Initialize repo structure with `frontend/`, `backend/`, and root `docker-compose.yml`
+- [ ] 1.2 Author `docker-compose.yml` with services: `db` (Postgres 16), `backend` (FastAPI), `frontend` (Next.js), and optional `reverse-proxy` (Caddy)
+- [ ] 1.3 Configure Postgres named volume and healthcheck; wire service dependencies
+- [ ] 1.4 Add `.env` handling for the database connection string and ports
+
+## 2. Backend foundation (FastAPI)
+
+- [ ] 2.1 Scaffold FastAPI app with a config module and a health endpoint
+- [ ] 2.2 Wire Postgres connectivity and a startup migration runner
+- [ ] 2.3 Define schema for `weight_entries`, `lap_times`, `health_metrics`, and `daily_logs`
+
+## 3. Weight tracking API
+
+- [ ] 3.1 Implement create/upsert weight entry (one per date) with weight > 0 validation
+- [ ] 3.2 Implement list weight history ordered by date
+- [ ] 3.3 Implement delete weight entry by id
+
+## 4. Lap tracking API
+
+- [ ] 4.1 Implement lap-time parser (`m:ss.ms` / `ss.ms` → integer milliseconds) with validation
+- [ ] 4.2 Implement create/list lap entries (per track)
+- [ ] 4.3 Implement derived session-best (per track+day) and lifetime-PB (per track) endpoints
+
+## 5. Health ingest API
+
+- [ ] 5.1 Implement tolerant `POST /api/ingest/health` accepting generic JSON metric records
+- [ ] 5.2 Store metrics generically (type, value, unit, measured_at)
+- [ ] 5.3 Implement retrieve metrics by type ordered by time
+
+## 6. Habit tracking API
+
+- [ ] 6.1 Implement daily-log upsert with `exercised` flag and extensible flags
+- [ ] 6.2 Implement retrieve daily logs for a date range
+
+## 7. Frontend (Next.js / TypeScript)
+
+- [ ] 7.1 Scaffold Next.js app with Tailwind and a typed API client
+- [ ] 7.2 Build the weigh-in entry form
+- [ ] 7.3 Build the lap-time entry form (`m:ss.ms` input, per track)
+- [ ] 7.4 Build the daily habit check-in UI
+
+## 8. Dashboard
+
+- [ ] 8.1 Render the weight trend chart with latest weight highlighted
+- [ ] 8.2 Render the weight-vs-lap-time correlation per track (per-race-day aggregation)
+- [ ] 8.3 Render the per-track lifetime personal-best board
+- [ ] 8.4 Render health-signal charts for prioritized metric types
+- [ ] 8.5 Implement "insufficient data" states for correlation and health views
+
+## 9. Apple Health integration (Phase 2)
+
+- [ ] 9.1 Select the bridge app and capture a real export payload
+- [ ] 9.2 Configure the bridge app to POST to `POST /api/ingest/health` on the LAN
+- [ ] 9.3 Verify prioritized signals (weight, resting heart rate, sleep, active energy, VO2 max, steps) flow through
+
+## 10. Polish & deploy
+
+- [ ] 10.1 Apply responsive visual polish to the dashboard (dark theme, racing aesthetic)
+- [ ] 10.2 Decide and wire the reverse proxy (Caddy) for hostname/HTTPS, or document plain IP access
+- [ ] 10.3 Write README with ZimaOS deploy and Apple Health bridge setup notes

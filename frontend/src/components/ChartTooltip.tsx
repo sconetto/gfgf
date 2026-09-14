@@ -30,10 +30,10 @@ export function ChartTooltip({
   maxY,
 }: ChartTooltipProps): ReactElement {
   const padX = 9;
-  const boxHeight = 40;
+  const boxHeight = 44;
   const offset = 12;
   const boxWidth =
-    Math.max(estimateTextWidth(title, 12), estimateTextWidth(subtitle, 11)) +
+    Math.max(estimateTextWidth(title, 13), estimateTextWidth(subtitle, 12)) +
     padX * 2;
 
   // Prefer the box to the right of the anchor; flip left when it would
@@ -64,15 +64,15 @@ export function ChartTooltip({
       />
       <text
         x={boxX + padX}
-        y={boxY + 17}
-        className="fill-label text-[12px] font-semibold tabular-nums"
+        y={boxY + 18}
+        className="fill-label text-[13px] font-semibold tabular-nums"
       >
         {title}
       </text>
       <text
         x={boxX + padX}
-        y={boxY + 32}
-        className="fill-label-secondary text-[11px] tabular-nums"
+        y={boxY + 34}
+        className="fill-label-secondary text-[12px] tabular-nums"
       >
         {subtitle}
       </text>

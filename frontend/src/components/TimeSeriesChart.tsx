@@ -10,9 +10,12 @@ import {
   CHART_HEIGHT_REGULAR,
   CHART_PAD_BOTTOM,
   CHART_PAD_LEFT,
+  CHART_PAD_LEFT_COMPACT,
   CHART_PAD_RIGHT,
+  CHART_PAD_RIGHT_COMPACT,
   CHART_PAD_TOP,
   CHART_WIDTH,
+  CHART_WIDTH_COMPACT,
 } from "@/components/chartFrame";
 import { ChartTooltip } from "@/components/ChartTooltip";
 import { InsufficientData } from "@/components/InsufficientData";
@@ -112,11 +115,12 @@ export function TimeSeriesChart({
   }
 
   const height = compact ? CHART_HEIGHT_COMPACT : CHART_HEIGHT_REGULAR;
-  const padLeft = CHART_PAD_LEFT;
-  const padRight = CHART_PAD_RIGHT;
+  const width = compact ? CHART_WIDTH_COMPACT : CHART_WIDTH;
+  const padLeft = compact ? CHART_PAD_LEFT_COMPACT : CHART_PAD_LEFT;
+  const padRight = compact ? CHART_PAD_RIGHT_COMPACT : CHART_PAD_RIGHT;
   const padTop = CHART_PAD_TOP;
   const padBottom = CHART_PAD_BOTTOM;
-  const plotWidth = CHART_WIDTH - padLeft - padRight;
+  const plotWidth = width - padLeft - padRight;
   const plotHeight = height - padTop - padBottom;
 
   const tMin = Math.min(...points.map((point) => point.t));
@@ -165,7 +169,7 @@ export function TimeSeriesChart({
   const latestLabelX =
     lastScaled === undefined
       ? padLeft
-      : Math.min(Math.max(lastScaled.x, padLeft + 34), CHART_WIDTH - padRight - 34);
+      : Math.min(Math.max(lastScaled.x, padLeft + 34), width - padRight - 34);
   const latestLabelY =
     lastScaled === undefined
       ? padTop + 12
@@ -180,7 +184,7 @@ export function TimeSeriesChart({
     if (rect.width === 0) {
       return;
     }
-    const pointerX = ((event.clientX - rect.left) / rect.width) * CHART_WIDTH;
+    const pointerX = ((event.clientX - rect.left) / rect.width) * width;
     let nearest: number | null = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
     for (let index = 0; index < scaled.length; index += 1) {
@@ -203,10 +207,12 @@ export function TimeSeriesChart({
   return (
     <svg
       ref={svgRef}
-      viewBox={`0 0 ${CHART_WIDTH} ${height}`}
+      viewBox={`0 0 ${width} ${height}`}
       role="img"
       aria-label={chartLabel}
-      className="h-auto w-full"
+      className={
+        compact ? "mx-auto h-auto w-full max-w-[420px]" : "h-auto w-full"
+      }
       onMouseMove={handleMouseMove}
       onMouseLeave={() => {
         setHoveredIndex(null);
@@ -218,14 +224,14 @@ export function TimeSeriesChart({
           <stop offset="1" style={{ stopColor: accent, stopOpacity: 0 }} />
         </linearGradient>
       </defs>
-      <text x={padLeft} y={12} className="fill-label-tertiary text-[11px]">
+      <text x={padLeft} y={12} className="fill-label-tertiary text-[13px]">
         {unit}
       </text>
       {yTicks.map((tick) => (
         <g key={tick}>
           <line
             x1={padLeft}
-            x2={CHART_WIDTH - padRight}
+            x2={width - padRight}
             y1={yScale(tick)}
             y2={yScale(tick)}
             className="stroke-separator"
@@ -235,7 +241,7 @@ export function TimeSeriesChart({
             x={padLeft - 8}
             y={yScale(tick) + 4}
             textAnchor="end"
-            className="fill-label-tertiary text-[11px] tabular-nums"
+            className="fill-label-tertiary text-[13px] tabular-nums"
           >
             {valueFormat(tick)}
           </text>
@@ -247,7 +253,7 @@ export function TimeSeriesChart({
           x={xScale(tick)}
           y={height - 8}
           textAnchor="middle"
-          className="fill-label-tertiary text-[11px] tabular-nums"
+          className="fill-label-tertiary text-[13px] tabular-nums"
         >
           {formatX(tick)}
         </text>
@@ -276,7 +282,7 @@ export function TimeSeriesChart({
           y={latestLabelY}
           textAnchor="middle"
           style={{ fill: accent }}
-          className="text-[12px] font-semibold tabular-nums"
+          className="text-[14px] font-semibold tabular-nums"
         >
           {valueFormat(latest.value)}
         </text>
@@ -304,7 +310,7 @@ export function TimeSeriesChart({
             title={valueFormat(hoveredPoint.value)}
             subtitle={formatX(hoveredPoint.t)}
             minX={padLeft}
-            maxX={CHART_WIDTH - padRight}
+            maxX={width - padRight}
             minY={padTop}
             maxY={padTop + plotHeight}
           />

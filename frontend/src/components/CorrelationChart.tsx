@@ -125,8 +125,8 @@ export function CorrelationChart({
   // Legend (top-right, same band as the unit label): earliest ⟷ latest date.
   const firstPoint = points[0];
   const lastPoint = points.at(-1);
-  const legendFont = 10;
-  const legendBarWidth = 64;
+  const legendFont = 12;
+  const legendBarWidth = 72;
   const legendGap = 6;
   const earliestText =
     firstPoint === undefined ? "" : formatShortDate(Date.parse(firstPoint.lapDate));
@@ -193,7 +193,7 @@ export function CorrelationChart({
           <stop offset="1" stopColor={dateColor(1)} />
         </linearGradient>
       </defs>
-      <text x={padLeft} y={12} className="fill-label-tertiary text-[11px]">
+      <text x={padLeft} y={12} className="fill-label-tertiary text-[13px]">
         best lap · by weight (kg)
       </text>
       {firstPoint === undefined ? null : (
@@ -202,15 +202,15 @@ export function CorrelationChart({
             x={earliestTextX}
             y={12}
             textAnchor="end"
-            className="fill-label-tertiary text-[10px] tabular-nums"
+            className="fill-label-tertiary text-[12px] tabular-nums"
           >
             {earliestText}
           </text>
           <rect
             x={legendBarLeft}
-            y={7}
+            y={6}
             width={legendBarWidth}
-            height={5}
+            height={6}
             rx={2.5}
             fill={`url(#${dateGradientId})`}
           />
@@ -218,7 +218,7 @@ export function CorrelationChart({
             x={CHART_WIDTH - padRight}
             y={12}
             textAnchor="end"
-            className="fill-label-tertiary text-[10px] tabular-nums"
+            className="fill-label-tertiary text-[12px] tabular-nums"
           >
             {latestText}
           </text>
@@ -238,7 +238,7 @@ export function CorrelationChart({
             x={padLeft - 8}
             y={yScale(tick) + 4}
             textAnchor="end"
-            className="fill-label-tertiary text-[11px] tabular-nums"
+            className="fill-label-tertiary text-[13px] tabular-nums"
           >
             {formatLapTime(Math.round(tick))}
           </text>
@@ -250,7 +250,7 @@ export function CorrelationChart({
           x={xScale(tick)}
           y={height - 8}
           textAnchor="middle"
-          className="fill-label-tertiary text-[11px] tabular-nums"
+          className="fill-label-tertiary text-[13px] tabular-nums"
         >
           {formatKg(tick)}
         </text>

@@ -79,23 +79,55 @@ pre-processing required.
 
 **Endpoint:** `POST /api/ingest/health` on the backend (`:8000`).
 
-### Manual import (verified)
+### Ingesting the export
 
-Export a JSON from the bridge app, copy it to the machine, then:
+The app produces a JSON export file; gfgf ingests it with one `POST`. Send the
+raw `health-export-json-*.json` file **verbatim** — the endpoint parses Health
+Export Kit's schema (v2) natively, no pre-processing.
+
+- **Method / endpoint:** `POST http://<server-ip>:8000/api/ingest/health`
+- **`Content-Type`:** `application/json`
+- **Body:** the export file as-is (top-level `activity` / `additional` / `sleep` / `meta`)
+- **Response:** `{"status":"ok","ingested":<n>}` — or `400` with a `detail` message for malformed JSON
 
 ```bash
 curl -X POST http://<server-ip>:8000/api/ingest/health \
   -H "Content-Type: application/json" \
-  --data-binary @health-export.json
+  --data-binary @health-export-json-2026-01-01-0000_to_2026-09-14-1542.json
 ```
 
-The response is `{"status":"ok","ingested":<n>}`.
+The endpoint also accepts a generic flat list of records as a fallback:
 
-### Automated sync
+```json
+[{"type": "steps", "value": 8000, "unit": "count", "measured_at": "2026-09-14T10:00:00Z"}]
+```
 
-If your bridge app supports exporting to a custom URL (a "sync to server" /
-REST destination), point it at `http://<server-ip>:8000/api/ingest/health` so it
-pushes on a schedule. The exact steps live in the app's own export settings.
+> **Not idempotent:** each `POST` inserts new rows. Re-importing the same (or an
+> overlapping) export duplicates readings, so a cumulative export is best paired
+> with a wipe-then-ingest (see below).
+
+### Automating it
+
+Health Export Kit has no automatic upload, so automate the import yourself. Since
+the app exports a *cumulative* range, the clean pattern is wipe-then-ingest:
+
+```bash
+#!/usr/bin/env bash
+# ingest the latest cumulative Health Export Kit export without duplicating
+set -euo pipefail
+latest="$(ls -t /path/to/exports/health-export-json-*.json | head -n1)"
+docker compose exec -T db psql -U gfgf -d gfgf -c "DELETE FROM health_metrics;" >/dev/null
+curl -fsS -X POST http://localhost:8000/api/ingest/health \
+  -H "Content-Type: application/json" \
+  --data-binary @"$latest"
+```
+
+Run it on a schedule with cron (or a launchd job, or an iOS Shortcut that hits
+the same endpoint):
+
+```cron
+0 4 * * * /usr/local/bin/gfgf-ingest >> /var/log/gfgf-ingest.log 2>&1
+```
 
 ### Signals ingested
 

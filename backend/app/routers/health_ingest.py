@@ -6,8 +6,8 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import select
 
 from app.deps import SessionDep
-from app.health_payload import IngestPayloadError, parse_health_payload
-from app.models import HealthMetric
+from app.health_payload import IngestPayloadError, parse_health_ingest
+from app.models import HealthMetric, WeightEntry
 from app.schemas import IngestResponse, MetricRead
 
 router = APIRouter(prefix="/api", tags=["health"])
@@ -18,10 +18,10 @@ async def ingest_health(request: Request, session: SessionDep) -> IngestResponse
     """Parse and store a tolerant health payload; malformed bodies store nothing."""
     raw_body = await request.body()
     try:
-        drafts = parse_health_payload(raw_body)
+        drafts = parse_health_ingest(raw_body)
     except IngestPayloadError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, exc.reason) from exc
-    for draft in drafts:
+    for draft in drafts.metrics:
         session.add(
             HealthMetric(
                 metric_type=draft.metric_type,
@@ -31,8 +31,24 @@ async def ingest_health(request: Request, session: SessionDep) -> IngestResponse
                 source="ingest",
             )
         )
+    for weight in drafts.weights:
+        result = await session.execute(
+            select(WeightEntry).where(WeightEntry.recorded_on == weight.recorded_on)
+        )
+        entry = result.scalar_one_or_none()
+        if entry is None:
+            session.add(
+                WeightEntry(
+                    recorded_on=weight.recorded_on,
+                    weight_kg=weight.weight_kg,
+                    body_fat_pct=weight.body_fat_pct,
+                )
+            )
+        else:
+            entry.weight_kg = weight.weight_kg
+            entry.body_fat_pct = weight.body_fat_pct
     await session.commit()
-    return IngestResponse(status="ok", ingested=len(drafts))
+    return IngestResponse(status="ok", ingested=len(drafts.metrics) + len(drafts.weights))
 
 
 @router.get("/metrics", response_model=list[MetricRead])

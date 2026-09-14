@@ -1,11 +1,11 @@
 """Unit tests for the Health Export Kit (schema v2) export parser dispatch."""
 
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Final
 
-from app.health_payload import MetricDraft, parse_health_payload
+from app.health_payload import MetricDraft, WeightDraft, parse_health_ingest, parse_health_payload
 
 _EXPORT: Final[str] = """
 {
@@ -290,3 +290,196 @@ def test_generic_list_payload_still_routes_to_generic_parser() -> None:
     assert drafts[0].metric_type == "x"
     assert drafts[0].value == Decimal("1")
     assert drafts[0].unit is None
+
+
+_EXTENDED_EXPORT: Final[str] = """
+{
+  "meta": {
+    "app": "Health Export Kit",
+    "appVersion": "1.0.16",
+    "schemaVersion": 2,
+    "timeZone": "America/Sao_Paulo",
+    "rangeStart": "2026-09-07T17:56:06Z"
+  },
+  "activity": {
+    "daily": [{"date": "2026-09-07", "steps": 9000}],
+    "workouts": [
+      {
+        "start": "09-07 18:30:00",
+        "durationSec": 3600,
+        "distanceKm": 8.2,
+        "activeEnergyKcal": 420.3,
+        "totalEnergyKcal": 500.1,
+        "averageHeartRateBpm": 155,
+        "maxHeartRateBpm": 178,
+        "type": "running",
+        "splits": [{"distanceKm": 1.0, "durationSec": 300}],
+        "streams": {"heartRate": [{"t": "09-07 18:31:00", "v": 120}]}
+      },
+      {"start": "09-09 07:15:00", "durationSec": 2400, "distanceKm": 5.0, "activeEnergyKcal": 250.0}
+    ]
+  },
+  "additional": {
+    "heart": {
+      "daily": [{"date": "2026-09-07", "values": {"vo2max": 38.2, "restingHR": 62}}]
+    },
+    "body": {
+      "daily": [
+        {
+          "date": "2026-09-07",
+          "values": {
+            "bodyMass": 82.4,
+            "bodyFat": 24.1,
+            "bmi": 26.3,
+            "height": 177.5,
+            "leanMass": 62.5
+          }
+        },
+        {"date": "2026-09-08", "values": {"bodyMass": 82.1}}
+      ]
+    },
+    "nutrition": {
+      "daily": [
+        {
+          "date": "2026-09-07",
+          "values": {
+            "caffeine": 95,
+            "carbs": 210.5,
+            "cholesterol": 300,
+            "dietEnergy": 2100,
+            "fat": 70.2,
+            "fiber": 12.4,
+            "protein": 110.0,
+            "satFat": 22.1,
+            "sodium": 3400,
+            "sugar": 60.5,
+            "water": 2200
+          }
+        }
+      ]
+    }
+  },
+  "sleep": {
+    "sessions": [
+      {
+        "asleepSec": 34535,
+        "durationSec": 35492,
+        "end": "09-08 07:03:46",
+        "vitals": {
+          "heartRate": {"avg": 52},
+          "hrvSDNN": {"avg": 48},
+          "oxygenSaturation": {"avg": 95.5},
+          "respiratoryRate": {"avg": 14.2}
+        }
+      }
+    ]
+  }
+}
+"""
+
+
+def test_parse_export_kit_heart_vo2max_field() -> None:
+    """Given a heart daily row with vo2max, When parsed, Then a vo2_max draft with its unit."""
+    drafts = parse_health_payload(_EXTENDED_EXPORT)
+    vo2 = _one_draft(drafts, "vo2_max")
+    assert (vo2.value, vo2.unit) == (Decimal("38.2"), "mL/kg·min")
+    assert vo2.measured_at == datetime(2026, 9, 7, 15, 0, tzinfo=UTC)
+
+
+def test_parse_export_kit_body_metric_fields() -> None:
+    """Given a body daily row, When parsed, Then bmi/height/leanMass map with exact units."""
+    drafts = parse_health_payload(_EXTENDED_EXPORT)
+    expected = {
+        "bmi": (Decimal("26.3"), "BMI"),
+        "height": (Decimal("177.5"), "cm"),
+        "lean_mass": (Decimal("62.5"), "kg"),
+    }
+    for metric_type, (value, unit) in expected.items():
+        draft = _one_draft(drafts, metric_type)
+        assert (draft.value, draft.unit) == (value, unit)
+        assert draft.measured_at == datetime(2026, 9, 7, 15, 0, tzinfo=UTC)
+
+
+def test_parse_export_kit_nutrition_fields() -> None:
+    """Given a nutrition daily row, When parsed, Then all eleven sums map with exact units."""
+    drafts = parse_health_payload(_EXTENDED_EXPORT)
+    expected = {
+        "caffeine": (Decimal("95"), "mg"),
+        "carbs": (Decimal("210.5"), "g"),
+        "cholesterol": (Decimal("300"), "mg"),
+        "diet_energy": (Decimal("2100"), "kcal"),
+        "fat": (Decimal("70.2"), "g"),
+        "fiber": (Decimal("12.4"), "g"),
+        "protein": (Decimal("110.0"), "g"),
+        "sat_fat": (Decimal("22.1"), "g"),
+        "sodium": (Decimal("3400"), "mg"),
+        "sugar": (Decimal("60.5"), "g"),
+        "water": (Decimal("2200"), "mL"),
+    }
+    for metric_type, (value, unit) in expected.items():
+        draft = _one_draft(drafts, metric_type)
+        assert (draft.value, draft.unit) == (value, unit)
+        assert draft.measured_at == datetime(2026, 9, 7, 15, 0, tzinfo=UTC)
+
+
+def test_parse_export_kit_sleep_vitals() -> None:
+    """Given a sleep session with vitals, When parsed, Then each avg maps at the session end stamp."""
+    drafts = parse_health_payload(_EXTENDED_EXPORT)
+    expected = {
+        "sleep_hr_avg": (Decimal("52"), "bpm"),
+        "sleep_hrv": (Decimal("48"), "ms"),
+        "sleep_spo2": (Decimal("95.5"), "%"),
+        "sleep_respiratory_rate": (Decimal("14.2"), "brpm"),
+    }
+    for metric_type, (value, unit) in expected.items():
+        draft = _one_draft(drafts, metric_type)
+        assert (draft.value, draft.unit) == (value, unit)
+        assert draft.measured_at == datetime(2026, 9, 8, 10, 3, 46, tzinfo=UTC)
+
+
+def test_parse_export_kit_workout_fields() -> None:
+    """Given workouts, When parsed, Then mapped fields yield drafts with duration in minutes."""
+    drafts = parse_health_payload(_EXTENDED_EXPORT)
+    duration = _drafts_of(drafts, "workout_duration")
+    assert {d.value for d in duration} == {Decimal("3600") / Decimal(60), Decimal("2400") / Decimal(60)}
+    assert all(d.unit == "min" for d in duration)
+    expected = {
+        "workout_distance": [(Decimal("8.2"), "km"), (Decimal("5.0"), "km")],
+        "workout_active_energy": [(Decimal("420.3"), "kcal"), (Decimal("250.0"), "kcal")],
+        "workout_total_energy": [(Decimal("500.1"), "kcal")],
+        "workout_avg_hr": [(Decimal("155"), "bpm")],
+        "workout_max_hr": [(Decimal("178"), "bpm")],
+    }
+    for metric_type, pairs in expected.items():
+        assert {(d.value, d.unit) for d in _drafts_of(drafts, metric_type)} == set(pairs)
+    starts = {d.measured_at for d in _drafts_of(drafts, "workout_duration")}
+    assert starts == {
+        datetime(2026, 9, 7, 21, 30, 0, tzinfo=UTC),
+        datetime(2026, 9, 9, 10, 15, 0, tzinfo=UTC),
+    }
+
+
+def test_parse_export_kit_body_mass_becomes_weight_drafts() -> None:
+    """Given body daily rows with bodyMass, When ingested, Then weight drafts carry body fat when numeric."""
+    ingest = parse_health_ingest(_EXTENDED_EXPORT)
+    assert ingest.weights == [
+        WeightDraft(
+            recorded_on=date(2026, 9, 7), weight_kg=Decimal("82.4"), body_fat_pct=Decimal("24.1")
+        ),
+        WeightDraft(recorded_on=date(2026, 9, 8), weight_kg=Decimal("82.1"), body_fat_pct=None),
+    ]
+
+
+def test_parse_export_kit_extended_metrics_include_new_signals() -> None:
+    """Given the extended export, When parsed via the metrics wrapper, Then new signals are present."""
+    drafts = parse_health_payload(_EXTENDED_EXPORT)
+    for metric_type in ("vo2_max", "bmi", "caffeine", "sleep_hrv", "workout_duration"):
+        assert _drafts_of(drafts, metric_type), f"expected at least one {metric_type} draft"
+
+
+def test_parse_health_ingest_generic_payload_has_no_weights() -> None:
+    """Given a generic records list, When ingested, Then metrics parse as before and no weights."""
+    ingest = parse_health_ingest('[{"type": "x", "value": 1}]')
+    assert ingest.weights == []
+    assert len(ingest.metrics) == 1
+    assert ingest.metrics[0].metric_type == "x"

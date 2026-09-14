@@ -8,8 +8,8 @@ and `sleep` sections) are detected here and routed to the native parser in
 `app.health_export_kit`. Anything that does not yield well-formed records
 raises IngestPayloadError so the HTTP boundary can reject it with a 400 before
 anything is stored. The shared parsing primitives (JsonValue,
-IngestPayloadError, MetricDraft) are defined in `app.health_types` and
-re-exported here.
+IngestPayloadError, MetricDraft, WeightDraft, IngestDraft) are defined in
+`app.health_types` and re-exported here.
 """
 
 import re
@@ -20,9 +20,16 @@ from typing import Final
 
 from pydantic import RootModel, ValidationError
 
-from app.health_types import IngestPayloadError, JsonValue, MetricDraft
+from app.health_types import IngestDraft, IngestPayloadError, JsonValue, MetricDraft, WeightDraft
 
-__all__ = ["IngestPayloadError", "MetricDraft", "parse_health_payload"]
+__all__ = [
+    "IngestDraft",
+    "IngestPayloadError",
+    "MetricDraft",
+    "WeightDraft",
+    "parse_health_ingest",
+    "parse_health_payload",
+]
 
 
 _CONTAINER_KEYS: Final = ("data", "metrics", "records", "measurements")
@@ -46,8 +53,8 @@ class _JsonValue(RootModel[JsonValue]):
     """Typed wrapper so raw JSON bodies parse without untyped results."""
 
 
-def parse_health_payload(raw: bytes | str) -> list[MetricDraft]:
-    """Parse a raw JSON body into metric drafts; raises IngestPayloadError when malformed."""
+def parse_health_ingest(raw: bytes | str) -> IngestDraft:
+    """Parse a raw JSON body into ingest drafts; raises IngestPayloadError when malformed."""
     try:
         payload = _JsonValue.model_validate_json(raw).root
     except ValidationError as exc:
@@ -57,7 +64,12 @@ def parse_health_payload(raw: bytes | str) -> list[MetricDraft]:
 
         return parse_health_export_kit(payload)
     records = _extract_records(payload)
-    return [_parse_record(record) for record in records]
+    return IngestDraft(metrics=[_parse_record(record) for record in records], weights=[])
+
+
+def parse_health_payload(raw: bytes | str) -> list[MetricDraft]:
+    """Parse a raw JSON body into metric drafts; raises IngestPayloadError when malformed."""
+    return parse_health_ingest(raw).metrics
 
 
 def _is_health_export_kit(payload: dict[str, JsonValue]) -> bool:

@@ -9,10 +9,10 @@ re-exports all three, keeping its public API unchanged.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
-__all__ = ["IngestPayloadError", "JsonValue", "MetricDraft"]
+__all__ = ["IngestDraft", "IngestPayloadError", "JsonValue", "MetricDraft", "WeightDraft"]
 
 type JsonValue = str | int | float | bool | None | list[JsonValue] | dict[str, JsonValue]
 
@@ -35,3 +35,20 @@ class MetricDraft:
     value: Decimal
     unit: str | None
     measured_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class WeightDraft:
+    """One Apple body-mass reading ready to upsert into the weight table."""
+
+    recorded_on: date
+    weight_kg: Decimal
+    body_fat_pct: Decimal | None
+
+
+@dataclass(frozen=True, slots=True)
+class IngestDraft:
+    """Everything one ingest payload contributes: metrics and weight entries."""
+
+    metrics: list[MetricDraft]
+    weights: list[WeightDraft]

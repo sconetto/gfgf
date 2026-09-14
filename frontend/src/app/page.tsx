@@ -27,10 +27,14 @@ import {
 import { CorrelationPanel } from "@/components/CorrelationPanel";
 import { FavoriteTile } from "@/components/FavoriteTile";
 import { HabitCheckIn } from "@/components/HabitCheckIn";
+import { HabitHistory } from "@/components/HabitHistory";
 import { HealthSignals } from "@/components/HealthSignals";
 import { LapForm } from "@/components/LapForm";
+import { LapHistory } from "@/components/LapHistory";
 import { PersonalBestBoard } from "@/components/PersonalBestBoard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { WeighInForm } from "@/components/WeighInForm";
+import { WeightHistory } from "@/components/WeightHistory";
 import { WeightTrendChart } from "@/components/WeightTrendChart";
 
 type HealthState =
@@ -112,6 +116,7 @@ function fallbackUnit(type: PrioritizedMetricType): string {
 export default function HomePage() {
   const [healthState, setHealthState] = useState<HealthState>({ kind: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
+  const [rememberedTracks, setRememberedTracks] = useState<readonly string[]>([]);
   const refresh = useCallback(() => {
     setReloadKey((key) => key + 1);
   }, []);
@@ -139,10 +144,27 @@ export default function HomePage() {
   const habitLogsState = useLoad(loadRecentHabitLogs, reloadKey);
   const metricsState = useLoad(loadMetricsBundle, reloadKey);
 
+  // Keep the last known track list while a refresh is in flight so the lap
+  // history and the lap form's datalist don't flash empty between reloads.
+  useEffect(() => {
+    if (personalBestsState.kind !== "loaded") {
+      return;
+    }
+    const next = personalBestsState.data.map(
+      (best: PersonalBest) => best.track_name,
+    );
+    setRememberedTracks((current) =>
+      current.length === next.length &&
+      current.every((track, index) => track === next[index])
+        ? current
+        : next,
+    );
+  }, [personalBestsState]);
+
   const tracks: readonly string[] =
     personalBestsState.kind === "loaded"
       ? personalBestsState.data.map((best: PersonalBest) => best.track_name)
-      : [];
+      : rememberedTracks;
   const habitLogs: readonly HabitLogRead[] =
     habitLogsState.kind === "loaded" ? habitLogsState.data : [];
   const weights: readonly WeightRead[] | null =
@@ -170,7 +192,10 @@ export default function HomePage() {
           <p className="text-[13px] font-bold text-label-secondary">
             gfgf · get fit, get fast
           </p>
-          <HealthBadge state={healthState} />
+          <div className="flex items-center gap-2">
+            <HealthBadge state={healthState} />
+            <ThemeToggle />
+          </div>
         </div>
         <h1 className="text-[34px] font-bold leading-tight tracking-tight text-label">
           Summary
@@ -178,9 +203,9 @@ export default function HomePage() {
         <p className="text-[15px] text-label-secondary">{todayLabel}</p>
       </header>
 
-      <section aria-label="Favorites" className="flex flex-col gap-3">
+      <section aria-label="Favorites" className="flex flex-col gap-4">
         <h2 className="text-xl font-bold text-label">Favorites</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           <FavoriteTile
             label="Weight"
             metric="weight"
@@ -226,7 +251,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section aria-label="Log today" className="flex flex-col gap-3">
+      <section aria-label="Log today" className="flex flex-col gap-4">
         <h2 className="text-xl font-bold text-label">Log</h2>
         <div className="grid gap-4 lg:grid-cols-3">
           <WeighInForm onSaved={refresh} />
@@ -235,7 +260,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section aria-label="Trends" className="flex flex-col gap-3">
+      {habitLogsState.kind === "loaded" ? (
+        <HabitHistory logs={habitLogsState.data} />
+      ) : null}
+
+      <section aria-label="Trends" className="flex flex-col gap-4">
         <h2 className="text-xl font-bold text-label">Highlights</h2>
         <div className="grid gap-4 lg:grid-cols-5">
           <div className="lg:col-span-3">
@@ -255,6 +284,10 @@ export default function HomePage() {
         </div>
       </section>
 
+      {weightsState.kind === "loaded" ? (
+        <WeightHistory weights={weightsState.data} onDeleted={refresh} />
+      ) : null}
+
       <LoadGate state={weightsState}>
         {(weights: readonly WeightRead[]) => (
           <LoadGate state={sessionBestsState}>
@@ -264,6 +297,10 @@ export default function HomePage() {
           </LoadGate>
         )}
       </LoadGate>
+
+      {personalBestsState.kind === "loaded" || rememberedTracks.length > 0 ? (
+        <LapHistory tracks={tracks} reloadKey={reloadKey} />
+      ) : null}
 
       <HealthSignals state={metricsState} />
 

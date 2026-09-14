@@ -1,17 +1,27 @@
 @import "tailwindcss";
 
-@theme {
-  /* Apple Health light design tokens. */
-  --color-health-bg: #f2f2f7;
-  --color-card: #ffffff;
-  --color-fill: #e9e9eb;
-  --color-separator: #e5e5ea;
-  --color-separator-strong: #c6c6c8;
-  --color-label: #1c1c1e;
-  --color-label-secondary: #6e6e73;
-  --color-label-tertiary: #8e8e93;
+/*
+ * Theme-aware Apple Health tokens (Tailwind v4 `@theme inline` pattern):
+ * utilities inline the runtime var (e.g. `bg-card` emits `var(--card)`), so
+ * every token flips automatically when `.dark` swaps the runtime values —
+ * no `dark:` variants anywhere. The semantic `--color-*` names are also
+ * declared on :root below so direct `var(--color-card)` references (SVG
+ * style props in the charts) flip too.
+ */
+@theme inline {
+  --color-health-bg: var(--bg);
+  --color-card: var(--card);
+  --color-fill: var(--fill);
+  --color-separator: var(--sep);
+  --color-separator-strong: var(--sep-strong);
+  --color-label: var(--label);
+  --color-label-secondary: var(--label-2);
+  --color-label-tertiary: var(--label-3);
+}
 
-  /* iOS system colors. */
+/* iOS system colors — static (identical in both modes), emitted as real
+ * CSS variables so `var(--color-ios-*)` references keep working. */
+@theme {
   --color-ios-red: #ff3b30;
   --color-ios-orange: #ff9500;
   --color-ios-yellow: #ffcc00;
@@ -31,6 +41,52 @@
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-html {
+/* Light (default) runtime values. */
+:root {
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --fill: #e9e9eb;
+  --sep: #e5e5ea;
+  --sep-strong: #c6c6c8;
+  --label: #1c1c1e;
+  --label-2: #6e6e73;
+  --label-3: #8e8e93;
+
+  /* Aliases for direct var(--color-*) references (SVG style props). */
+  --color-health-bg: var(--bg);
+  --color-card: var(--card);
+  --color-fill: var(--fill);
+  --color-separator: var(--sep);
+  --color-separator-strong: var(--sep-strong);
+  --color-label: var(--label);
+  --color-label-secondary: var(--label-2);
+  --color-label-tertiary: var(--label-3);
+
   color-scheme: light;
+}
+
+/* iOS dark-mode values. */
+.dark {
+  --bg: #000000;
+  --card: #1c1c1e;
+  --fill: #2c2c2e;
+  --sep: #3a3a3c;
+  --sep-strong: #48484a;
+  --label: #ffffff;
+  --label-2: #aeaeb2;
+  --label-3: #6e6e73;
+
+  color-scheme: dark;
+}
+
+/* ThemeToggle glyph swap — class-driven, so it matches the pre-hydration
+ * boot script with zero flash and no hydration mismatch. */
+.theme-toggle-sun {
+  display: none;
+}
+.dark .theme-toggle-sun {
+  display: block;
+}
+.dark .theme-toggle-moon {
+  display: none;
 }

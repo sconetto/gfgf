@@ -1,8 +1,20 @@
-import { useId } from "react";
-import type { ReactElement } from "react";
+"use client";
+
+import { useId, useRef, useState } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 
 import { linearScale, niceTicks, type Pt } from "@/lib/chart";
 import { formatShortDate, formatShortDateTime } from "@/lib/dates";
+import {
+  CHART_HEIGHT_COMPACT,
+  CHART_HEIGHT_REGULAR,
+  CHART_PAD_BOTTOM,
+  CHART_PAD_LEFT,
+  CHART_PAD_RIGHT,
+  CHART_PAD_TOP,
+  CHART_WIDTH,
+} from "@/components/chartFrame";
+import { ChartTooltip } from "@/components/ChartTooltip";
 import { InsufficientData } from "@/components/InsufficientData";
 
 export interface TimeSeriesPoint {
@@ -10,7 +22,6 @@ export interface TimeSeriesPoint {
   readonly value: number;
 }
 
-const WIDTH = 720;
 const DEFAULT_ACCENT = "var(--color-ios-blue)";
 
 interface TimeSeriesChartProps {
@@ -93,17 +104,19 @@ export function TimeSeriesChart({
 }: TimeSeriesChartProps): ReactElement {
   const rawGradientId = useId();
   const gradientId = `grad-${rawGradientId.replace(/[^a-zA-Z0-9]/g, "")}`;
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   if (points.length < 2) {
     return <InsufficientData message="Not enough points to draw this chart yet." />;
   }
 
-  const height = compact ? 190 : 250;
-  const padLeft = 54;
-  const padRight = 18;
-  const padTop = 22;
-  const padBottom = 30;
-  const plotWidth = WIDTH - padLeft - padRight;
+  const height = compact ? CHART_HEIGHT_COMPACT : CHART_HEIGHT_REGULAR;
+  const padLeft = CHART_PAD_LEFT;
+  const padRight = CHART_PAD_RIGHT;
+  const padTop = CHART_PAD_TOP;
+  const padBottom = CHART_PAD_BOTTOM;
+  const plotWidth = CHART_WIDTH - padLeft - padRight;
   const plotHeight = height - padTop - padBottom;
 
   const tMin = Math.min(...points.map((point) => point.t));
@@ -152,18 +165,52 @@ export function TimeSeriesChart({
   const latestLabelX =
     lastScaled === undefined
       ? padLeft
-      : Math.min(Math.max(lastScaled.x, padLeft + 34), WIDTH - padRight - 34);
+      : Math.min(Math.max(lastScaled.x, padLeft + 34), CHART_WIDTH - padRight - 34);
   const latestLabelY =
     lastScaled === undefined
       ? padTop + 12
       : Math.max(lastScaled.y - 14, padTop + 12);
 
+  function handleMouseMove(event: ReactMouseEvent<SVGSVGElement>): void {
+    const svg = svgRef.current;
+    if (svg === null) {
+      return;
+    }
+    const rect = svg.getBoundingClientRect();
+    if (rect.width === 0) {
+      return;
+    }
+    const pointerX = ((event.clientX - rect.left) / rect.width) * CHART_WIDTH;
+    let nearest: number | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    for (let index = 0; index < scaled.length; index += 1) {
+      const candidate = scaled[index];
+      if (candidate === undefined) {
+        continue;
+      }
+      const distance = Math.abs(candidate.x - pointerX);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = index;
+      }
+    }
+    setHoveredIndex((current) => (current === nearest ? current : nearest));
+  }
+
+  const hoveredScaled = hoveredIndex === null ? undefined : scaled[hoveredIndex];
+  const hoveredPoint = hoveredIndex === null ? undefined : points[hoveredIndex];
+
   return (
     <svg
-      viewBox={`0 0 ${WIDTH} ${height}`}
+      ref={svgRef}
+      viewBox={`0 0 ${CHART_WIDTH} ${height}`}
       role="img"
       aria-label={chartLabel}
       className="h-auto w-full"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => {
+        setHoveredIndex(null);
+      }}
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -178,7 +225,7 @@ export function TimeSeriesChart({
         <g key={tick}>
           <line
             x1={padLeft}
-            x2={WIDTH - padRight}
+            x2={CHART_WIDTH - padRight}
             y1={yScale(tick)}
             y2={yScale(tick)}
             className="stroke-separator"
@@ -234,6 +281,35 @@ export function TimeSeriesChart({
           {valueFormat(latest.value)}
         </text>
       ) : null}
+      {hoveredScaled === undefined || hoveredPoint === undefined ? null : (
+        <g pointerEvents="none">
+          <line
+            x1={hoveredScaled.x}
+            x2={hoveredScaled.x}
+            y1={padTop}
+            y2={areaBottom}
+            className="stroke-separator-strong"
+            strokeWidth={1}
+          />
+          <circle
+            cx={hoveredScaled.x}
+            cy={hoveredScaled.y}
+            r={4.5}
+            style={{ fill: accent, stroke: "var(--color-card)" }}
+            strokeWidth={2}
+          />
+          <ChartTooltip
+            anchorX={hoveredScaled.x}
+            anchorY={hoveredScaled.y}
+            title={valueFormat(hoveredPoint.value)}
+            subtitle={formatX(hoveredPoint.t)}
+            minX={padLeft}
+            maxX={CHART_WIDTH - padRight}
+            minY={padTop}
+            maxY={padTop + plotHeight}
+          />
+        </g>
+      )}
     </svg>
   );
 }

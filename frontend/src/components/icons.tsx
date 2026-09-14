@@ -137,3 +137,84 @@ export function StopwatchGlyph({ className = "h-4 w-4" }: GlyphProps): ReactElem
     </svg>
   );
 }
+
+export function SunGlyph({ className = "h-4 w-4" }: GlyphProps): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2.5" />
+      <path d="M12 19.5V22" />
+      <path d="M2 12h2.5" />
+      <path d="M19.5 12H22" />
+      <path d="m4.98 4.98 1.77 1.77" />
+      <path d="m17.25 17.25 1.77 1.77" />
+      <path d="m19.02 4.98-1.77 1.77" />
+      <path d="m6.75 17.25-1.77 1.77" />
+    </svg>
+  );
+}
+
+export function TrashGlyph({ className = "h-4 w-4" }: GlyphProps): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M3.5 6h17" />
+      <path d="M8.5 6V4.5A1.5 1.5 0 0 1 10 3h4a1.5 1.5 0 0 1 1.5 1.5V6" />
+      <path d="M5.5 6l.8 13a2 2 0 0 0 2 1.9h7.4a2 2 0 0 0 2-1.9l.8-13" />
+      <path d="M10 10.5v6" />
+      <path d="M14 10.5v6" />
+    </svg>
+  );
+}
+
+export function CheckCircleGlyph({ className = "h-4 w-4" }: GlyphProps): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.3 12.4 2.5 2.5 4.9-5.3" />
+    </svg>
+  );
+}
+
+export function CircleGlyph({ className = "h-4 w-4" }: GlyphProps): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+    </svg>
+  );
+}

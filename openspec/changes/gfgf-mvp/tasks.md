@@ -52,8 +52,8 @@
 ## 9. Apple Health integration (Phase 2)
 
 - [x] 9.1 Select the bridge app and capture a real export payload
-- [ ] 9.2 Configure the bridge app to POST to `POST /api/ingest/health` on the LAN
-- [ ] 9.3 Verify prioritized signals (weight, resting heart rate, sleep, active energy, VO2 max, steps) flow through
+- [x] 9.2 Document the ingest endpoint for external automation (bridge app has no auto-export)
+- [x] 9.3 Verify prioritized signals flow through (via manual ingest of the full 2026 export)
 
 ## 10. Polish & deploy
 

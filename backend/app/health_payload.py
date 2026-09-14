@@ -3,43 +3,26 @@
 The bridge app (e.g. Health Auto Export) pushes JSON whose exact shape is not
 under our control, so field names are matched against common variants and the
 payload may be a bare list of records or an object holding one under a
-container key. Anything that does not yield well-formed records raises
-IngestPayloadError so the HTTP boundary can reject it with a 400 before
-anything is stored.
+container key. Health Export Kit exports (an object with `meta`, `activity`,
+and `sleep` sections) are detected here and routed to the native parser in
+`app.health_export_kit`. Anything that does not yield well-formed records
+raises IngestPayloadError so the HTTP boundary can reject it with a 400 before
+anything is stored. The shared parsing primitives (JsonValue,
+IngestPayloadError, MetricDraft) are defined in `app.health_types` and
+re-exported here.
 """
 
 import re
 from collections.abc import Sequence
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Final
 
 from pydantic import RootModel, ValidationError
 
+from app.health_types import IngestPayloadError, JsonValue, MetricDraft
+
 __all__ = ["IngestPayloadError", "MetricDraft", "parse_health_payload"]
-
-type JsonValue = str | int | float | bool | None | list[JsonValue] | dict[str, JsonValue]
-
-
-class IngestPayloadError(ValueError):
-    """Raised when a health-ingest payload cannot be parsed into metric records."""
-
-    reason: str
-
-    def __init__(self, reason: str) -> None:
-        self.reason = reason
-        super().__init__(reason)
-
-
-@dataclass(frozen=True, slots=True)
-class MetricDraft:
-    """One parsed metric record ready to be stored."""
-
-    metric_type: str
-    value: Decimal
-    unit: str | None
-    measured_at: datetime
 
 
 _CONTAINER_KEYS: Final = ("data", "metrics", "records", "measurements")
@@ -69,8 +52,21 @@ def parse_health_payload(raw: bytes | str) -> list[MetricDraft]:
         payload = _JsonValue.model_validate_json(raw).root
     except ValidationError as exc:
         raise IngestPayloadError("payload is not valid JSON") from exc
+    if isinstance(payload, dict) and _is_health_export_kit(payload):
+        from app.health_export_kit import parse_health_export_kit
+
+        return parse_health_export_kit(payload)
     records = _extract_records(payload)
     return [_parse_record(record) for record in records]
+
+
+def _is_health_export_kit(payload: dict[str, JsonValue]) -> bool:
+    """True when the payload carries the Health Export Kit export shape."""
+    return (
+        isinstance(payload.get("meta"), dict)
+        and isinstance(payload.get("activity"), dict)
+        and isinstance(payload.get("sleep"), dict)
+    )
 
 
 def _extract_records(payload: JsonValue) -> list[dict[str, JsonValue]]:

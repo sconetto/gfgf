@@ -43,20 +43,20 @@
 
 ## 8. Dashboard
 
-- [ ] 8.1 Render the weight trend chart with latest weight highlighted
-- [ ] 8.2 Render the weight-vs-lap-time correlation per track (per-race-day aggregation)
-- [ ] 8.3 Render the per-track lifetime personal-best board
-- [ ] 8.4 Render health-signal charts for prioritized metric types
-- [ ] 8.5 Implement "insufficient data" states for correlation and health views
+- [x] 8.1 Render the weight trend chart with latest weight highlighted
+- [x] 8.2 Render the weight-vs-lap-time correlation per track (per-race-day aggregation)
+- [x] 8.3 Render the per-track lifetime personal-best board
+- [x] 8.4 Render health-signal charts for prioritized metric types
+- [x] 8.5 Implement "insufficient data" states for correlation and health views
 
 ## 9. Apple Health integration (Phase 2)
 
-- [ ] 9.1 Select the bridge app and capture a real export payload
+- [x] 9.1 Select the bridge app and capture a real export payload
 - [ ] 9.2 Configure the bridge app to POST to `POST /api/ingest/health` on the LAN
 - [ ] 9.3 Verify prioritized signals (weight, resting heart rate, sleep, active energy, VO2 max, steps) flow through
 
 ## 10. Polish & deploy
 
-- [ ] 10.1 Apply responsive visual polish to the dashboard (dark theme, racing aesthetic)
-- [ ] 10.2 Decide and wire the reverse proxy (Caddy) for hostname/HTTPS, or document plain IP access
-- [ ] 10.3 Write README with ZimaOS deploy and Apple Health bridge setup notes
+- [x] 10.1 Apply responsive visual polish to the dashboard (Apple Health style)
+- [x] 10.2 Document plain IP access (no reverse proxy; Caddy stays optional for future hostname/HTTPS)
+- [x] 10.3 Write README with ZimaOS deploy and Apple Health bridge setup notes

@@ -1,0 +1,5 @@
+# gfgf reverse proxy (enabled with: docker compose --profile proxy up -d)
+# Plain HTTP on :80 today. TLS and Basic Auth (design D6) land here later.
+:80 {
+	reverse_proxy frontend:3000
+}

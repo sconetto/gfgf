@@ -1,0 +1,61 @@
+# gfgf stack: Postgres + FastAPI backend + Next.js frontend + optional Caddy proxy.
+#
+# Start everything:  docker compose up -d --build
+# Include the reverse proxy:  docker compose --profile proxy up -d --build
+#
+# The proxy profile is opt-in (design D8): plain HTTP on :80 today, with TLS
+# and Basic Auth (design D6) to be layered on later.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gfgf}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gfgf}
+      POSTGRES_DB: ${POSTGRES_DB:-gfgf}
+    volumes:
+      - gfgf-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # 5432 is intentionally NOT published to the host; only the backend talks to it.
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://gfgf:gfgf@db:5432/gfgf}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Inlined into the client bundle at build time; changing it requires a rebuild.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+
+  reverse-proxy:
+    image: caddy:2-alpine
+    profiles: ["proxy"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./reverse-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - frontend
+
+volumes:
+  gfgf-db-data:

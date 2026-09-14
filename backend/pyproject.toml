@@ -1,0 +1,23 @@
+[project]
+name = "gfgf-backend"
+version = "0.1.0"
+description = "gfgf backend: weight, lap-time, and health tracking API (FastAPI + SQLAlchemy async)."
+requires-python = ">=3.12"
+dependencies = [
+    "asyncpg>=0.29",
+    "fastapi>=0.115",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "sqlalchemy>=2.0.30",
+    "uvicorn[standard]>=0.32",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.0",
+    "pytest>=8.3",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

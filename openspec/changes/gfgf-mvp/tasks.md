@@ -1,15 +1,15 @@
 ## 1. Project scaffolding & compose
 
-- [ ] 1.1 Initialize repo structure with `frontend/`, `backend/`, and root `docker-compose.yml`
-- [ ] 1.2 Author `docker-compose.yml` with services: `db` (Postgres 16), `backend` (FastAPI), `frontend` (Next.js), and optional `reverse-proxy` (Caddy)
-- [ ] 1.3 Configure Postgres named volume and healthcheck; wire service dependencies
-- [ ] 1.4 Add `.env` handling for the database connection string and ports
+- [x] 1.1 Initialize repo structure with `frontend/`, `backend/`, and root `docker-compose.yml`
+- [x] 1.2 Author `docker-compose.yml` with services: `db` (Postgres 16), `backend` (FastAPI), `frontend` (Next.js), and optional `reverse-proxy` (Caddy)
+- [x] 1.3 Configure Postgres named volume and healthcheck; wire service dependencies
+- [x] 1.4 Add `.env` handling for the database connection string and ports
 
 ## 2. Backend foundation (FastAPI)
 
-- [ ] 2.1 Scaffold FastAPI app with a config module and a health endpoint
-- [ ] 2.2 Wire Postgres connectivity and a startup migration runner
-- [ ] 2.3 Define schema for `weight_entries`, `lap_times`, `health_metrics`, and `daily_logs`
+- [x] 2.1 Scaffold FastAPI app with a config module and a health endpoint
+- [x] 2.2 Wire Postgres connectivity and a startup migration runner
+- [x] 2.3 Define schema for `weight_entries`, `lap_times`, `health_metrics`, and `daily_logs`
 
 ## 3. Weight tracking API
 
@@ -36,10 +36,10 @@
 
 ## 7. Frontend (Next.js / TypeScript)
 
-- [ ] 7.1 Scaffold Next.js app with Tailwind and a typed API client
-- [ ] 7.2 Build the weigh-in entry form
-- [ ] 7.3 Build the lap-time entry form (`m:ss.ms` input, per track)
-- [ ] 7.4 Build the daily habit check-in UI
+- [x] 7.1 Scaffold Next.js app with Tailwind and a typed API client
+- [x] 7.2 Build the weigh-in entry form
+- [x] 7.3 Build the lap-time entry form (`m:ss.ms` input, per track)
+- [x] 7.4 Build the daily habit check-in UI
 
 ## 8. Dashboard
 

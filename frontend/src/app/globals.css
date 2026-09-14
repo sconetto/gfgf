@@ -1,1 +1,36 @@
 @import "tailwindcss";
+
+@theme {
+  /* Apple Health light design tokens. */
+  --color-health-bg: #f2f2f7;
+  --color-card: #ffffff;
+  --color-fill: #e9e9eb;
+  --color-separator: #e5e5ea;
+  --color-separator-strong: #c6c6c8;
+  --color-label: #1c1c1e;
+  --color-label-secondary: #6e6e73;
+  --color-label-tertiary: #8e8e93;
+
+  /* iOS system colors. */
+  --color-ios-red: #ff3b30;
+  --color-ios-orange: #ff9500;
+  --color-ios-yellow: #ffcc00;
+  --color-ios-green: #34c759;
+  --color-ios-mint: #00c7be;
+  --color-ios-teal: #30b0c7;
+  --color-ios-cyan: #32ade6;
+  --color-ios-blue: #007aff;
+  --color-ios-indigo: #5856d6;
+  --color-ios-purple: #af52de;
+  --color-ios-pink: #ff2d55;
+  --color-ios-brown: #a2845e;
+
+  /* SF Pro system stack. */
+  --font-sf:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}

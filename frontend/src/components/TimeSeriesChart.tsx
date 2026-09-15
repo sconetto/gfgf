@@ -284,16 +284,6 @@ export function TimeSeriesChart({
           {thresholdLabel}
         </text>
       )}
-      {thresholdLabel === null || !thresholdHovered ? null : (
-        <ThresholdCitation
-          label={thresholdLabel}
-          source={thresholds?.source}
-          note={thresholds?.note}
-          anchorX={width - padRight}
-          minX={padLeft}
-          maxX={width - padRight}
-        />
-      )}
       {yTicks.map((tick) => (
         <g key={tick}>
           <line
@@ -402,6 +392,16 @@ export function TimeSeriesChart({
             maxY={padTop + plotHeight}
           />
         </g>
+      )}
+      {thresholdLabel === null || !thresholdHovered ? null : (
+        <ThresholdCitation
+          label={thresholdLabel}
+          source={thresholds?.source}
+          note={thresholds?.note}
+          anchorX={width - padRight}
+          minX={padLeft}
+          maxX={width - padRight}
+        />
       )}
     </svg>
   );

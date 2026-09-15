@@ -132,3 +132,30 @@ class HabitLogRead(BaseModel):
     exercised: bool
     flags: dict[str, bool]
     note: str | None
+
+
+ActivityLevel = Literal["sedentary", "light", "moderate", "very_active"]
+Sex = Literal["male", "female"]
+
+
+class ProfileCreate(BaseModel):
+    """PUT /api/profile request body."""
+
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+
+    age_years: int = Field(ge=1, le=120)
+    sex: Sex
+    height_cm: Decimal = Field(gt=0)
+    activity_level: ActivityLevel
+
+
+class ProfileRead(BaseModel):
+    """The single-user profile as returned by the API."""
+
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, from_attributes=True)
+
+    id: int
+    age_years: int
+    sex: Sex
+    height_cm: float
+    activity_level: ActivityLevel

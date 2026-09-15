@@ -16,7 +16,7 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.main import create_app
-from app.models import DailyLog, HealthMetric, LapTime, WeightEntry
+from app.models import DailyLog, HealthMetric, LapTime, Profile, WeightEntry
 from app.schema_sync import ensure_schema
 
 
@@ -30,6 +30,7 @@ async def _wipe_database(database_url: str) -> None:
             _ = await connection.execute(delete(LapTime))
             _ = await connection.execute(delete(HealthMetric))
             _ = await connection.execute(delete(DailyLog))
+            _ = await connection.execute(delete(Profile))
     finally:
         await engine.dispose()
 

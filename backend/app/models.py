@@ -76,3 +76,15 @@ class DailyLog(CreatedAtMixin, Base):
         JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
     )
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class Profile(CreatedAtMixin, Base):
+    """Single-user profile used to personalize healthy ranges (design D9)."""
+
+    __tablename__: str = "profile"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    age_years: Mapped[int] = mapped_column(Integer, nullable=False)
+    sex: Mapped[str] = mapped_column(Text, nullable=False)
+    height_cm: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
+    activity_level: Mapped[str] = mapped_column(Text, nullable=False)

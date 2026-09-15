@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict
 
 from app import db
 from app.config import get_settings
-from app.routers import habits, health_ingest, laps, weights
+from app.routers import habits, health_ingest, laps, profile, weights
 from app.schema_sync import ensure_schema
 
 
@@ -65,6 +65,7 @@ def create_app() -> FastAPI:
     application.include_router(laps.router)
     application.include_router(health_ingest.router)
     application.include_router(habits.router)
+    application.include_router(profile.router)
 
     return application
 

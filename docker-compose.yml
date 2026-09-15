@@ -24,6 +24,7 @@ services:
     # 5432 is intentionally NOT published to the host; only the backend talks to it.
 
   backend:
+    image: ghcr.io/sconetto/gfgf-backend:latest
     build: ./backend
     restart: unless-stopped
     environment:
@@ -35,11 +36,9 @@ services:
         condition: service_healthy
 
   frontend:
+    image: ghcr.io/sconetto/gfgf-frontend:latest
     build:
       context: ./frontend
-      args:
-        # Inlined into the client bundle at build time; changing it requires a rebuild.
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-3000}:3000"

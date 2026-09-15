@@ -1,7 +1,18 @@
-const DEFAULT_API_BASE_URL = "http://localhost:8000";
+function resolveApiBaseUrl(): string {
+  // Prefer an explicit override; otherwise derive the backend from the
+  // browser's own hostname so a single published image works on any LAN host
+  // (backend and frontend share a host, backend on the default port 8000).
+  const configured = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (configured && configured.length > 0) {
+    return configured;
+  }
+  if (typeof window !== "undefined") {
+    return `http://${window.location.hostname}:8000`;
+  }
+  return "http://localhost:8000";
+}
 
-const apiBaseUrl: string =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+const apiBaseUrl: string = resolveApiBaseUrl();
 
 export interface HealthStatus {
   readonly status: "ok";

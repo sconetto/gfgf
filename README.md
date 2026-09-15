@@ -25,8 +25,8 @@ A docker compose stack, LAN-only and single-user (no authentication by design):
 | Service | Image | Port | Notes |
 | --- | --- | --- | --- |
 | `db` | `postgres:16-alpine` | internal only | named volume (`gfgf-db-data`) persists data |
-| `backend` | FastAPI (Python 3.12) | `:8000` | REST API; schema is auto-created on startup |
-| `frontend` | Next.js 16 (TypeScript) | `:3000` | the dashboard |
+| `backend` | `ghcr.io/sconetto/gfgf-backend` | `:8000` | FastAPI (Python 3.12); REST API, schema auto-created on startup |
+| `frontend` | `ghcr.io/sconetto/gfgf-frontend` | `:3000` | Next.js 16 (TypeScript) dashboard |
 | `reverse-proxy` *(optional)* | `caddy:2-alpine` | `:80` | opt-in, see [Reverse proxy](#reverse-proxy-optional) |
 
 ## Quick start (local)
@@ -41,35 +41,37 @@ docker compose up -d --build
 
 ## Deploying on ZimaOS
 
-1. **Get the code onto the ZimaOS box** — either `git clone <your-repo-url>` over
-   SSH, or upload the folder through the ZimaOS Files app. ZimaOS can also run
-   this compose file directly from its Docker/Compose UI if you prefer.
+The backend and frontend images are published to GitHub Container Registry
+(GHCR), so ZimaOS can pull them and never needs to build. `db` and the optional
+`reverse-proxy` use public Docker Hub images.
+
+1. **Copy just the compose + env files onto the box** — you only need
+   `docker-compose.yml` and `.env.example` (plus `reverse-proxy/Caddyfile` if you
+   enable the proxy). No source code is required; the `build:` sections are
+   ignored when pulling.
 
 2. **Configure the environment:**
 
    ```bash
-   cd gfgf
    cp .env.example .env
    ```
 
-   Edit `.env` and set the browser-facing API URL to the machine's LAN address
-   (this is required for the dashboard to reach the backend from another device):
+   The backend URL is auto-detected from the browser's hostname (same host,
+   port 8000), so no `NEXT_PUBLIC_API_BASE_URL` is needed for normal LAN use.
 
-   ```dotenv
-   NEXT_PUBLIC_API_BASE_URL=http://<zimaos-lan-ip>:8000
-   ```
-
-3. **Start the stack:**
+3. **Start the stack (pull only, no build):**
 
    ```bash
-   docker compose up -d --build
+   docker compose up -d
    ```
 
 4. **Open** `http://<zimaos-lan-ip>:3000` from any device on the LAN.
 
-> **Note:** `NEXT_PUBLIC_API_BASE_URL` is inlined into the frontend bundle at
-> build time. If you change it later, rebuild the frontend:
-> `docker compose up -d --build frontend`.
+> **Note:** GHCR packages are private by default. For ZimaOS to pull them
+> anonymously, make the `gfgf-backend` and `gfgf-frontend` packages public on
+> GitHub (or configure GHCR credentials on the ZimaOS box). To publish new
+> images, tag a release `vX.Y.Z` and push — the release workflow builds and
+> pushes both images with `latest`, `X.Y.Z`, `X.Y`, and `X` tags.
 
 ## Apple Health bridge
 
@@ -153,7 +155,7 @@ All settings live in `.env` (copy from `.env.example`):
 | `DATABASE_URL` | `postgresql+asyncpg://gfgf:gfgf@db:5432/gfgf` | Backend DSN (host `db` inside compose) |
 | `BACKEND_PORT` | `8000` | Host port for the backend |
 | `FRONTEND_PORT` | `3000` | Host port for the frontend |
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` | Browser-facing backend URL (set to the LAN IP for remote access) |
+| `NEXT_PUBLIC_API_BASE_URL` | *(auto-detected)* | Optional override. Defaults to the browser's hostname on port 8000; set only for a non-standard backend host/port |
 
 If you change `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB`, update
 `DATABASE_URL` to match — the backend only reads `DATABASE_URL`.

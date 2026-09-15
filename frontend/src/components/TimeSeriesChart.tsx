@@ -457,15 +457,17 @@ function ThresholdCitation({
     ...sourceLines.map((line) => ({ text: line, size: 12 })),
   ];
   const lineHeight = 18;
+  const padY = 10;
   const boxWidth = Math.min(
     boxMaxWidth,
     Math.max(...lines.map((line) => estimateTextWidth(line.text, line.size))) +
       padX * 2,
   );
-  const boxHeight = lines.length * lineHeight + 16;
+  const boxHeight = padY * 2 + lines.length * lineHeight;
   let boxX = anchorX - boxWidth;
   boxX = clamp(boxX, minX, maxX - boxWidth);
   const boxY = 22;
+  const firstBaseline = boxY + padY + 12;
 
   return (
     <g pointerEvents="none">
@@ -486,7 +488,7 @@ function ThresholdCitation({
           <text
             key={index}
             x={boxX + padX}
-            y={boxY + 15 + index * lineHeight}
+            y={firstBaseline + index * lineHeight}
             className={
               isLabel
                 ? "fill-ios-green font-semibold tabular-nums"

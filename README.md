@@ -131,13 +131,12 @@ the same endpoint):
 
 ### Signals ingested
 
-Prioritized (shown on the dashboard): `resting_heart_rate`, `sleep`,
-`active_energy`, `steps`, `vo2_max`.
-
-Also stored (available via the API, surfaced later): SpO₂, basal energy,
-distance, flights climbed, average/walking heart rate, breathing disturbances,
-mindful daylight minutes, walking speed/asymmetry/step length, and per-session
-sleep stage breakdowns (deep/REM/core/efficiency/awakenings).
+All 48 stored signals are surfaced on the dashboard, grouped by section
+(Activity, Heart, Sleep, Body, Nutrition, Workouts, Mobility, Mind). Five are
+additionally pinned as Favorites tiles: `resting_heart_rate`, `sleep`,
+`active_energy`, `steps`, `vo2_max`. Where a healthy range is known — e.g.
+steps ≥ 7,500; resting heart rate 60–100 bpm — the charts draw a translucent
+healthy band (or a dashed line when only one bound applies).
 
 > Weight is *not* imported from Apple Health — it stays a manual entry in gfgf,
 > which also keeps the weight↔lap correlation fully under your control.

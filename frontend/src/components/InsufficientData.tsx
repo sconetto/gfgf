@@ -10,7 +10,7 @@ export function InsufficientData({
   readonly hint?: string;
 }): ReactElement {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-[12px] bg-health-bg px-4 py-8 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-[12px] border border-separator bg-card px-4 py-8 text-center">
       <span
         className="flex h-8 w-8 items-center justify-center rounded-full bg-separator/60 text-label-tertiary"
         aria-hidden="true"

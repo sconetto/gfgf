@@ -166,8 +166,9 @@ curl -X POST http://<zimaos-lan-ip>:8000/api/ingest/health \
 ```
 
 - **Response:** `{"status":"ok","ingested":<n>}` — or `400` with a `detail` message for malformed JSON.
-- **Not idempotent:** each `POST` inserts new rows. Re-importing an overlapping
-  export duplicates readings, so pair a cumulative export with wipe-then-ingest.
+- **Idempotent:** re-importing the same (or an overlapping) export upserts by
+  `metric_type` + `measured_at`, so no readings are duplicated. Re-importing the
+  cumulative export is safe.
 
 The endpoint also accepts a generic flat list of records as a fallback:
 
@@ -177,14 +178,13 @@ The endpoint also accepts a generic flat list of records as a fallback:
 
 ### Automating the ingest
 
-Health Export Kit has no automatic upload, so automate the import yourself. The
-clean pattern is wipe-then-ingest:
+Health Export Kit has no automatic upload, so automate the import yourself. Since
+ingest is idempotent, just POST the latest cumulative export:
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 latest="$(ls -t /path/to/exports/health-export-json-*.json | head -n1)"
-docker compose exec -T db psql -U gfgf -d gfgf -c "DELETE FROM health_metrics;" >/dev/null
 curl -fsS -X POST http://localhost:8000/api/ingest/health \
   -H "Content-Type: application/json" \
   --data-binary @"$latest"

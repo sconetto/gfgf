@@ -122,3 +122,38 @@ def test_metrics_ordered_and_isolated_by_type(api_client: TestClient) -> None:
 def test_metrics_requires_type_param(api_client: TestClient) -> None:
     """Given no type query parameter, When metrics are queried, Then a validation error."""
     assert api_client.get("/api/metrics").status_code == 422
+
+
+def test_ingest_is_idempotent(api_client: TestClient) -> None:
+    """Given the same export twice, When ingested twice, Then no duplicate rows."""
+    payload = [
+        {"type": "step_count", "value": 8000, "measured_at": "2026-06-01T10:00:00Z"},
+        {"type": "heart_rate", "value": 62, "measured_at": "2026-06-01T09:00:00Z"},
+    ]
+    assert api_client.post("/api/ingest/health", json=payload).status_code == 200
+    assert api_client.post("/api/ingest/health", json=payload).status_code == 200
+
+    steps = _METRICS.validate_json(
+        api_client.get("/api/metrics", params={"type": "step_count"}).text
+    )
+    assert len(steps) == 1
+    assert steps[0].value == 8000.0
+
+
+def test_ingest_upsert_overwrites_changed_value(api_client: TestClient) -> None:
+    """Given a reading re-ingested with a new value, When ingested, Then updated not duplicated."""
+    timestamp = "2026-06-01T10:00:00Z"
+    _ = api_client.post(
+        "/api/ingest/health",
+        json=[{"type": "step_count", "value": 8000, "measured_at": timestamp}],
+    )
+    _ = api_client.post(
+        "/api/ingest/health",
+        json=[{"type": "step_count", "value": 8500, "measured_at": timestamp}],
+    )
+
+    steps = _METRICS.validate_json(
+        api_client.get("/api/metrics", params={"type": "step_count"}).text
+    )
+    assert len(steps) == 1
+    assert steps[0].value == 8500.0

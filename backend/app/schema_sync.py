@@ -13,6 +13,10 @@ from app.models import Base
 
 ADDITIVE_SCHEMA_SQL: tuple[str, ...] = (
     "ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS flags JSONB NOT NULL DEFAULT '{}'::jsonb",
+    # One-time dedupe of any health metrics duplicated before ingest became an
+    # upsert, keeping the most recently imported row per (metric_type, measured_at).
+    "DELETE FROM health_metrics WHERE id NOT IN (SELECT DISTINCT ON (metric_type, measured_at) id FROM health_metrics ORDER BY metric_type, measured_at, created_at DESC)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS uq_health_metrics_type_measured_at ON health_metrics (metric_type, measured_at)",
 )
 
 

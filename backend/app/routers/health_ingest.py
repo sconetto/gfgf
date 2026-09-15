@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.deps import SessionDep
 from app.health_payload import IngestPayloadError, parse_health_ingest
@@ -21,16 +22,28 @@ async def ingest_health(request: Request, session: SessionDep) -> IngestResponse
         drafts = parse_health_ingest(raw_body)
     except IngestPayloadError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, exc.reason) from exc
-    for draft in drafts.metrics:
-        session.add(
-            HealthMetric(
-                metric_type=draft.metric_type,
-                value=draft.value,
-                unit=draft.unit,
-                measured_at=draft.measured_at,
-                source="ingest",
-            )
+    if drafts.metrics:
+        statement = pg_insert(HealthMetric).values(
+            [
+                {
+                    "metric_type": draft.metric_type,
+                    "value": draft.value,
+                    "unit": draft.unit,
+                    "measured_at": draft.measured_at,
+                    "source": "ingest",
+                }
+                for draft in drafts.metrics
+            ]
         )
+        statement = statement.on_conflict_do_update(
+            index_elements=["metric_type", "measured_at"],
+            set_={
+                "value": statement.excluded.value,
+                "unit": statement.excluded.unit,
+                "source": statement.excluded.source,
+            },
+        )
+        _ = await session.execute(statement)
     for weight in drafts.weights:
         result = await session.execute(
             select(WeightEntry).where(WeightEntry.recorded_on == weight.recorded_on)

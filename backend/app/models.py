@@ -3,9 +3,20 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, Text, func, text
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Integer,
+    Numeric,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.sql.schema import SchemaItem
 
 
 class Base(DeclarativeBase):
@@ -51,6 +62,11 @@ class HealthMetric(CreatedAtMixin, Base):
     """A generic health metric reading ingested from a bridge app (design D7)."""
 
     __tablename__: str = "health_metrics"
+    __table_args__: tuple[SchemaItem, ...] = (
+        UniqueConstraint(
+            "metric_type", "measured_at", name="uq_health_metrics_type_measured_at"
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     metric_type: Mapped[str] = mapped_column(Text, nullable=False)

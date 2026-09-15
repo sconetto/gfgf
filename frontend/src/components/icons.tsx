@@ -218,3 +218,59 @@ export function CircleGlyph({ className = "h-4 w-4" }: GlyphProps): ReactElement
     </svg>
   );
 }
+
+export function SquaresGlyph({ className = "h-4 w-4" }: GlyphProps): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="3.5" width="7" height="7" rx="2" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="2" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="2" />
+      <rect x="13.5" y="13.5" width="7" height="7" rx="2" />
+    </svg>
+  );
+}
+
+export function SquarePencilGlyph({ className = "h-4 w-4" }: GlyphProps): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M10.8 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5v-3.8" />
+      <path d="M18.4 2.9a1.9 1.9 0 0 1 2.7 2.7L12 14.7l-4.3 1.2 1.2-4.3 9.5-8.7z" />
+    </svg>
+  );
+}
+
+export function ClockGlyph({ className = "h-4 w-4" }: GlyphProps): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" />
+    </svg>
+  );
+}

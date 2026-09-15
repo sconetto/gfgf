@@ -37,17 +37,20 @@ export function DerivedCards({ profile, weightKg }: DerivedCardsProps): ReactEle
         <StatTile label="Protein" value={`${macros.proteinG}`} unit="g/day" />
         <StatTile label="Carbs" value={`${macros.carbsG}`} unit="g/day" />
       </div>
-      <div className="mt-1 flex flex-col gap-2">
+      <div className="mt-2 flex flex-col gap-2">
         <p className="text-xs font-medium text-label-secondary">Heart rate zones</p>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-5 gap-2">
           {zones.map((zone) => (
             <div
               key={zone.name}
-              className="flex flex-col gap-0.5 rounded-[10px] bg-health-bg px-3 py-2"
+              className="flex min-w-0 flex-col gap-1 rounded-[10px] bg-health-bg px-3 py-3"
             >
-              <span className="text-xs font-medium text-label">{zone.name}</span>
+              <span className="truncate text-sm font-semibold text-label">{zone.name}</span>
+              <span className="text-[13px] tabular-nums text-label-secondary">
+                {zone.minBpm}–{zone.maxBpm}
+              </span>
               <span className="text-[11px] tabular-nums text-label-tertiary">
-                {zone.minBpm}–{zone.maxBpm} bpm · {zone.pct}
+                {zone.pct}
               </span>
             </div>
           ))}

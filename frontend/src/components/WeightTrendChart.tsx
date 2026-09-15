@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { ReactElement } from "react";
 
 import type { WeightRead } from "@/lib/api";
@@ -18,10 +17,15 @@ import { metricAccent } from "@/components/metricTheme";
 interface WeightTrendChartProps {
   /** Weigh-ins ordered by date ascending (as the API returns them). */
   readonly weights: readonly WeightRead[];
+  readonly range: ChartRange;
+  readonly onRangeChange: (range: ChartRange) => void;
 }
 
-export function WeightTrendChart({ weights }: WeightTrendChartProps): ReactElement {
-  const [range, setRange] = useState<ChartRange>("Y");
+export function WeightTrendChart({
+  weights,
+  range,
+  onRangeChange,
+}: WeightTrendChartProps): ReactElement {
   const visible = filterByRange(
     weights.map((weight) => ({ t: Date.parse(weight.recorded_on), weight })),
     range,
@@ -38,7 +42,7 @@ export function WeightTrendChart({ weights }: WeightTrendChartProps): ReactEleme
           </span>
           <RangeSegmentedControl
             value={range}
-            onChange={setRange}
+            onChange={onRangeChange}
             label="Weight chart time range"
           />
         </div>

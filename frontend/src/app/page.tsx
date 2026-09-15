@@ -7,12 +7,14 @@ import {
   fetchHealth,
   fetchHabitLogs,
   fetchPersonalBests,
+  fetchProfile,
   fetchSessionBests,
   fetchWeights,
   type HabitLogRead,
   type HealthStatus,
   type MetricRead,
   type PersonalBest,
+  type ProfileRead,
   type SessionBest,
   type WeightRead,
 } from "@/lib/api";
@@ -25,6 +27,7 @@ import {
   type PrioritizedMetricType,
 } from "@/lib/metrics";
 import { CorrelationPanel } from "@/components/CorrelationPanel";
+import { DerivedCards } from "@/components/DerivedCards";
 import { FavoriteTile } from "@/components/FavoriteTile";
 import { HabitCheckIn } from "@/components/HabitCheckIn";
 import { HabitHistory } from "@/components/HabitHistory";
@@ -32,6 +35,8 @@ import { HealthSignals } from "@/components/HealthSignals";
 import { LapForm } from "@/components/LapForm";
 import { LapHistory } from "@/components/LapHistory";
 import { PersonalBestBoard } from "@/components/PersonalBestBoard";
+import { ProfileForm } from "@/components/ProfileForm";
+import { RangeSegmentedControl, type ChartRange } from "@/components/RangeSegmentedControl";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WeighInForm } from "@/components/WeighInForm";
 import { WeightHistory } from "@/components/WeightHistory";
@@ -121,6 +126,19 @@ export default function HomePage() {
     setReloadKey((key) => key + 1);
   }, []);
 
+  // Global range is the default; changing it clears per-chart overrides.
+  const [globalRange, setGlobalRange] = useState<ChartRange>("M");
+  const [rangeOverrides, setRangeOverrides] = useState<
+    Readonly<Record<string, ChartRange>>
+  >({});
+  const handleGlobalRange = useCallback((range: ChartRange) => {
+    setGlobalRange(range);
+    setRangeOverrides({});
+  }, []);
+  const handleChartRange = useCallback((id: string, range: ChartRange) => {
+    setRangeOverrides((current) => ({ ...current, [id]: range }));
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
     fetchHealth(controller.signal)
@@ -143,6 +161,7 @@ export default function HomePage() {
   const personalBestsState = useLoad(fetchPersonalBests, reloadKey);
   const habitLogsState = useLoad(loadRecentHabitLogs, reloadKey);
   const metricsState = useLoad(loadMetricsBundle, reloadKey);
+  const profileState = useLoad(fetchProfile, reloadKey);
 
   // Keep the last known track list while a refresh is in flight so the lap
   // history and the lap form's datalist don't flash empty between reloads.
@@ -171,6 +190,8 @@ export default function HomePage() {
     weightsState.kind === "loaded" ? weightsState.data : null;
   const bundle: MetricsBundle | null =
     metricsState.kind === "loaded" ? metricsState.data : null;
+  const profile: ProfileRead | null =
+    profileState.kind === "loaded" ? profileState.data : null;
 
   const weightLatest = weights?.at(-1);
   const stepsLatest = metricLatest(bundle, "steps");
@@ -193,6 +214,11 @@ export default function HomePage() {
             gfgf · get fit, get fast
           </p>
           <div className="flex items-center gap-2">
+            <RangeSegmentedControl
+              value={globalRange}
+              onChange={handleGlobalRange}
+              label="Global chart time range"
+            />
             <HealthBadge state={healthState} />
             <ThemeToggle />
           </div>
@@ -254,11 +280,16 @@ export default function HomePage() {
       <section aria-label="Log today" className="flex flex-col gap-4">
         <h2 className="text-xl font-bold text-label">Log</h2>
         <div className="grid gap-4 lg:grid-cols-3">
+          <ProfileForm profile={profile} onSaved={refresh} />
           <WeighInForm onSaved={refresh} />
           <LapForm onSaved={refresh} tracks={tracks} />
           <HabitCheckIn logs={habitLogs} onSaved={refresh} />
         </div>
       </section>
+
+      {profile !== null && weightLatest !== undefined ? (
+        <DerivedCards profile={profile} weightKg={weightLatest.weight_kg} />
+      ) : null}
 
       {habitLogsState.kind === "loaded" ? (
         <HabitHistory logs={habitLogsState.data} />
@@ -270,7 +301,11 @@ export default function HomePage() {
           <div className="lg:col-span-3">
             <LoadGate state={weightsState}>
               {(weights: readonly WeightRead[]) => (
-                <WeightTrendChart weights={weights} />
+                <WeightTrendChart
+                  weights={weights}
+                  range={rangeOverrides["weight"] ?? globalRange}
+                  onRangeChange={(range) => handleChartRange("weight", range)}
+                />
               )}
             </LoadGate>
           </div>
@@ -302,7 +337,14 @@ export default function HomePage() {
         <LapHistory tracks={tracks} reloadKey={reloadKey} />
       ) : null}
 
-      <HealthSignals state={metricsState} />
+      <HealthSignals
+        state={metricsState}
+        globalRange={globalRange}
+        rangeOverrides={rangeOverrides}
+        onChartRange={handleChartRange}
+        profile={profile}
+        weightKg={weightLatest?.weight_kg ?? null}
+      />
 
       <footer className="pb-2 text-center text-xs text-label-tertiary">
         self-hosted · LAN only · no auth by design

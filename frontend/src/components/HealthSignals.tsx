@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment } from "react";
 import type { ReactElement } from "react";
 
-import type { MetricRead } from "@/lib/api";
+import type { MetricRead, ProfileRead } from "@/lib/api";
 import {
   METRIC_SIGNALS,
   formatMetricValue,
   type MetricSignalMeta,
+  type MetricThresholds,
   type MetricsBundle,
 } from "@/lib/metrics";
+import { personalizeThresholds } from "@/lib/derived";
 import { InsufficientData } from "@/components/InsufficientData";
 import {
   RangeSegmentedControl,
@@ -26,9 +28,21 @@ export type HealthSignalsState =
 
 interface HealthSignalsProps {
   readonly state: HealthSignalsState;
+  readonly globalRange: ChartRange;
+  readonly rangeOverrides: Readonly<Record<string, ChartRange>>;
+  readonly onChartRange: (id: string, range: ChartRange) => void;
+  readonly profile: ProfileRead | null;
+  readonly weightKg: number | null;
 }
 
-export function HealthSignals({ state }: HealthSignalsProps): ReactElement {
+export function HealthSignals({
+  state,
+  globalRange,
+  rangeOverrides,
+  onChartRange,
+  profile,
+  weightKg,
+}: HealthSignalsProps): ReactElement {
   return (
     <section className="flex flex-col gap-4" aria-labelledby="health-heading">
       <h2 id="health-heading" className="text-xl font-bold text-label">
@@ -40,9 +54,32 @@ export function HealthSignals({ state }: HealthSignalsProps): ReactElement {
         <p className="px-1 py-8 text-center text-sm text-ios-red">{state.message}</p>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {METRIC_SIGNALS.map((meta) => (
-            <SignalCard key={meta.type} meta={meta} metrics={state.data[meta.type]} />
-          ))}
+          {METRIC_SIGNALS.map((meta, index) => {
+            const previous = METRIC_SIGNALS[index - 1];
+            const showHeader =
+              previous === undefined || previous.section !== meta.section;
+            return (
+              <Fragment key={meta.type}>
+                {showHeader ? (
+                  <h3 className="col-span-full mt-2 text-[13px] font-semibold uppercase tracking-wider text-label-secondary">
+                    {meta.section}
+                  </h3>
+                ) : null}
+                <SignalCard
+                  meta={meta}
+                  metrics={state.data[meta.type]}
+                  range={rangeOverrides[meta.type] ?? globalRange}
+                  onRangeChange={(range) => onChartRange(meta.type, range)}
+                  thresholds={
+                    profile === null
+                      ? meta.thresholds
+                      : (personalizeThresholds(profile, weightKg, meta.type) ??
+                        meta.thresholds)
+                  }
+                />
+              </Fragment>
+            );
+          })}
         </div>
       )}
     </section>
@@ -52,11 +89,16 @@ export function HealthSignals({ state }: HealthSignalsProps): ReactElement {
 function SignalCard({
   meta,
   metrics,
+  range,
+  onRangeChange,
+  thresholds,
 }: {
   readonly meta: MetricSignalMeta;
   readonly metrics: readonly MetricRead[];
+  readonly range: ChartRange;
+  readonly onRangeChange: (range: ChartRange) => void;
+  readonly thresholds: MetricThresholds | undefined;
 }): ReactElement {
-  const [range, setRange] = useState<ChartRange>("M");
   const accent = metricAccent(meta.type);
   const visible = filterByRange(
     metrics.map((metric) => ({ t: Date.parse(metric.measured_at), metric })),
@@ -82,7 +124,7 @@ function SignalCard({
         </div>
         <RangeSegmentedControl
           value={range}
-          onChange={setRange}
+          onChange={onRangeChange}
           label={`${meta.label} chart time range`}
         />
       </div>
@@ -116,6 +158,7 @@ function SignalCard({
           valueFormat={formatMetricValue}
           accent={accent}
           compact
+          thresholds={thresholds}
           chartLabel={`${meta.label} over time${unit === "" ? "" : ` in ${unit}`}`}
         />
       )}

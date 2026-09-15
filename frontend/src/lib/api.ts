@@ -104,6 +104,23 @@ async function postJson(
   return response.json();
 }
 
+async function putJson(
+  path: string,
+  body: string,
+  signal?: AbortSignal,
+): Promise<unknown> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body,
+    signal: signal ?? null,
+  });
+  if (!response.ok) {
+    throw new Error(`PUT ${path} failed: ${await rejectionMessage(response)}`);
+  }
+  return response.json();
+}
+
 async function deleteAndExpectNoContent(
   path: string,
   signal?: AbortSignal,
@@ -379,6 +396,75 @@ export async function fetchMetrics(
   );
   if (!isArrayOf(result, isMetricRead)) {
     throw new Error("Metrics response had an unexpected shape");
+  }
+  return result;
+}
+
+// --- profile ---
+
+export type Sex = "male" | "female";
+export type ActivityLevel = "sedentary" | "light" | "moderate" | "very_active";
+
+export interface ProfileRead {
+  readonly id: number;
+  readonly age_years: number;
+  readonly sex: Sex;
+  readonly height_cm: number;
+  readonly activity_level: ActivityLevel;
+}
+
+export interface ProfileCreatePayload {
+  readonly age_years: number;
+  readonly sex: Sex;
+  readonly height_cm: number;
+  readonly activity_level: ActivityLevel;
+}
+
+const SEX_VALUES: readonly string[] = ["male", "female"];
+const ACTIVITY_VALUES: readonly string[] = [
+  "sedentary",
+  "light",
+  "moderate",
+  "very_active",
+];
+
+function isProfileRead(value: unknown): value is ProfileRead {
+  return (
+    isRecord(value) &&
+    typeof value.id === "number" &&
+    typeof value.age_years === "number" &&
+    typeof value.sex === "string" &&
+    SEX_VALUES.includes(value.sex) &&
+    typeof value.height_cm === "number" &&
+    typeof value.activity_level === "string" &&
+    ACTIVITY_VALUES.includes(value.activity_level)
+  );
+}
+
+export async function fetchProfile(
+  signal?: AbortSignal,
+): Promise<ProfileRead | null> {
+  const result: unknown = await getJson("/api/profile", signal);
+  if (result === null) {
+    return null;
+  }
+  if (!isProfileRead(result)) {
+    throw new Error("Profile response had an unexpected shape");
+  }
+  return result;
+}
+
+export async function saveProfile(
+  payload: ProfileCreatePayload,
+  signal?: AbortSignal,
+): Promise<ProfileRead> {
+  const result: unknown = await putJson(
+    "/api/profile",
+    JSON.stringify(payload),
+    signal,
+  );
+  if (!isProfileRead(result)) {
+    throw new Error("Profile response had an unexpected shape");
   }
   return result;
 }

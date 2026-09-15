@@ -3,8 +3,9 @@
 import { useId, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 
-import { linearScale, niceTicks, type Pt } from "@/lib/chart";
+import { linearScale, niceTicks, clamp, type Pt } from "@/lib/chart";
 import { formatShortDate, formatShortDateTime } from "@/lib/dates";
+import type { MetricThresholds } from "@/lib/metrics";
 import {
   CHART_HEIGHT_COMPACT,
   CHART_HEIGHT_REGULAR,
@@ -16,6 +17,7 @@ import {
   CHART_PAD_TOP,
   CHART_WIDTH,
   CHART_WIDTH_COMPACT,
+  estimateTextWidth,
 } from "@/components/chartFrame";
 import { ChartTooltip } from "@/components/ChartTooltip";
 import { InsufficientData } from "@/components/InsufficientData";
@@ -37,6 +39,11 @@ interface TimeSeriesChartProps {
   readonly accent?: string;
   readonly highlightLatest?: boolean;
   readonly compact?: boolean;
+  /**
+   * Healthy-range bounds. When both are present a band is drawn behind the
+   * line; when only one is present a dashed line marks the bound.
+   */
+  readonly thresholds?: MetricThresholds | undefined;
 }
 
 /**
@@ -104,11 +111,13 @@ export function TimeSeriesChart({
   accent = DEFAULT_ACCENT,
   highlightLatest = false,
   compact = false,
+  thresholds,
 }: TimeSeriesChartProps): ReactElement {
   const rawGradientId = useId();
   const gradientId = `grad-${rawGradientId.replace(/[^a-zA-Z0-9]/g, "")}`;
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [thresholdHovered, setThresholdHovered] = useState(false);
 
   if (points.length < 2) {
     return <InsufficientData message="Not enough points to draw this chart yet." />;
@@ -132,6 +141,12 @@ export function TimeSeriesChart({
 
   let vMin = Math.min(...points.map((point) => point.value));
   let vMax = Math.max(...points.map((point) => point.value));
+  if (thresholds?.min !== undefined) {
+    vMin = Math.min(vMin, thresholds.min);
+  }
+  if (thresholds?.max !== undefined) {
+    vMax = Math.max(vMax, thresholds.max);
+  }
   const vSpan = vMax - vMin;
   if (vSpan === 0) {
     const pad = Math.max(Math.abs(vMin) * 0.1, 1);
@@ -142,6 +157,31 @@ export function TimeSeriesChart({
     vMax += vSpan * 0.08;
   }
   const yScale = linearScale([vMin, vMax], [padTop + plotHeight, padTop]);
+
+  const thresholdMin = thresholds?.min;
+  const thresholdMax = thresholds?.max;
+  const bandRect =
+    thresholdMin !== undefined && thresholdMax !== undefined
+      ? {
+          y: yScale(thresholdMax),
+          height: Math.max(yScale(thresholdMin) - yScale(thresholdMax), 0),
+        }
+      : null;
+  const thresholdLineY =
+    bandRect === null && thresholdMin !== undefined
+      ? yScale(thresholdMin)
+      : bandRect === null && thresholdMax !== undefined
+        ? yScale(thresholdMax)
+        : null;
+
+  const thresholdLabel =
+    thresholdMin !== undefined && thresholdMax !== undefined
+      ? `healthy ${valueFormat(thresholdMin)}–${valueFormat(thresholdMax)}`
+      : thresholdMin !== undefined
+        ? `healthy ≥ ${valueFormat(thresholdMin)}`
+        : thresholdMax !== undefined
+          ? `healthy ≤ ${valueFormat(thresholdMax)}`
+          : null;
 
   const yTicks = niceTicks(vMin, vMax, 4);
   const xTickCount = 4;
@@ -227,6 +267,33 @@ export function TimeSeriesChart({
       <text x={padLeft} y={12} className="fill-label-tertiary text-[13px]">
         {unit}
       </text>
+      {thresholdLabel === null ? null : (
+        <text
+          x={width - padRight}
+          y={12}
+          textAnchor="end"
+          className="fill-ios-green text-[13px] font-medium tabular-nums"
+          onMouseEnter={() => {
+            setThresholdHovered(true);
+          }}
+          onMouseLeave={() => {
+            setThresholdHovered(false);
+          }}
+          style={{ cursor: "help" }}
+        >
+          {thresholdLabel}
+        </text>
+      )}
+      {thresholdLabel === null || !thresholdHovered ? null : (
+        <ThresholdCitation
+          label={thresholdLabel}
+          source={thresholds?.source}
+          note={thresholds?.note}
+          anchorX={width - padRight}
+          minX={padLeft}
+          maxX={width - padRight}
+        />
+      )}
       {yTicks.map((tick) => (
         <g key={tick}>
           <line
@@ -258,6 +325,26 @@ export function TimeSeriesChart({
           {formatX(tick)}
         </text>
       ))}
+      {bandRect === null ? null : (
+        <rect
+          x={padLeft}
+          y={bandRect.y}
+          width={width - padLeft - padRight}
+          height={bandRect.height}
+          className="fill-ios-green/15"
+        />
+      )}
+      {thresholdLineY === null ? null : (
+        <line
+          x1={padLeft}
+          x2={width - padRight}
+          y1={thresholdLineY}
+          y2={thresholdLineY}
+          className="stroke-ios-green"
+          strokeWidth={1.5}
+          strokeDasharray="6 5"
+        />
+      )}
       {areaD === null ? null : <path d={areaD} fill={`url(#${gradientId})`} />}
       <path
         d={lineD}
@@ -317,5 +404,102 @@ export function TimeSeriesChart({
         </g>
       )}
     </svg>
+  );
+}
+
+function wrapText(text: string, maxWidth: number, fontSize: number): readonly string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current === "" ? word : `${current} ${word}`;
+    if (estimateTextWidth(candidate, fontSize) <= maxWidth) {
+      current = candidate;
+    } else {
+      if (current !== "") {
+        lines.push(current);
+      }
+      current = word;
+    }
+  }
+  if (current !== "") {
+    lines.push(current);
+  }
+  return lines;
+}
+
+function ThresholdCitation({
+  label,
+  source,
+  note,
+  anchorX,
+  minX,
+  maxX,
+}: {
+  readonly label: string;
+  readonly source: string | undefined;
+  readonly note: string | undefined;
+  readonly anchorX: number;
+  readonly minX: number;
+  readonly maxX: number;
+}): ReactElement {
+  const boxMaxWidth = 300;
+  const padX = 12;
+  const noteLines =
+    note === undefined ? [] : wrapText(note, boxMaxWidth - padX * 2, 13);
+  const sourceLines =
+    source === undefined
+      ? []
+      : wrapText(`Source: ${source}`, boxMaxWidth - padX * 2, 12);
+  const lines: readonly { readonly text: string; readonly size: number }[] = [
+    { text: label, size: 14 },
+    ...noteLines.map((line) => ({ text: line, size: 13 })),
+    ...sourceLines.map((line) => ({ text: line, size: 12 })),
+  ];
+  const lineHeight = 18;
+  const boxWidth = Math.min(
+    boxMaxWidth,
+    Math.max(...lines.map((line) => estimateTextWidth(line.text, line.size))) +
+      padX * 2,
+  );
+  const boxHeight = lines.length * lineHeight + 16;
+  let boxX = anchorX - boxWidth;
+  boxX = clamp(boxX, minX, maxX - boxWidth);
+  const boxY = 22;
+
+  return (
+    <g pointerEvents="none">
+      <rect
+        x={boxX}
+        y={boxY}
+        width={boxWidth}
+        height={boxHeight}
+        rx={10}
+        className="fill-card stroke-separator-strong"
+        strokeWidth={1}
+        style={{ filter: "drop-shadow(0 2px 6px rgb(0 0 0 / 0.15))" }}
+      />
+      {lines.map((line, index) => {
+        const isLabel = index === 0;
+        const isSource = source !== undefined && index >= lines.length - sourceLines.length;
+        return (
+          <text
+            key={index}
+            x={boxX + padX}
+            y={boxY + 15 + index * lineHeight}
+            className={
+              isLabel
+                ? "fill-ios-green font-semibold tabular-nums"
+                : isSource
+                  ? "fill-label-secondary tabular-nums"
+                  : "fill-label"
+            }
+            style={{ fontSize: line.size }}
+          >
+            {line.text}
+          </text>
+        );
+      })}
+    </g>
   );
 }

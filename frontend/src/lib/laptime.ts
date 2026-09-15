@@ -20,7 +20,7 @@ export function parseLapTime(raw: string): LapTimeParseResult {
       message: "must be m:ss.ms or ss.ms — e.g. 1:03.500 or 40.132",
     };
   }
-  const [minutesRaw, secondsWithColonRaw, secondsBareRaw, fractionRaw] = match;
+  const [, minutesRaw, secondsWithColonRaw, secondsBareRaw, fractionRaw] = match;
   const minutes = minutesRaw === undefined ? 0 : Number(minutesRaw);
   const seconds = Number(secondsWithColonRaw ?? secondsBareRaw ?? "0");
   const fractionMs =
